@@ -21,6 +21,11 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+# 是否优先尝试 with_structured_output。
+# DeepSeek 目前不支持 json_schema 形式的 response_format，开着只会每次白跑一次 400 请求。
+# 实测：评测 20 份合同期间，每次 LLM 调用都触发一次 400 → 延迟翻倍。
+_USE_STRUCTURED_OUTPUT = False
+
 # 匹配 ```json ... ``` 或 ``` ... ``` 代码块
 _JSON_FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.DOTALL)
 
@@ -101,19 +106,25 @@ def call_json(
     model = get_chat_model(timeout=timeout)
     start = time.perf_counter()
 
-    # ---- 路径一：结构化输出 ----
-    try:
-        structured = model.with_structured_output(schema)
-        result = structured.invoke([("system", system_prompt), ("user", user_prompt)])
-        elapsed_ms = int((time.perf_counter() - start) * 1000)
-        logger.info(
-            "LLM 结构化输出成功 schema=%s elapsed_ms=%d prompt_tokens=None completion_tokens=None",
-            schema.__name__,
-            elapsed_ms,
-        )
-        return result
-    except Exception as exc:  # noqa: BLE001  退化为 JSON 模式
-        logger.warning("结构化输出失败，退化为 JSON 模式：%s", exc)
+    # ---- 路径一：结构化输出（默认关闭）----
+    # DeepSeek 不支持 json_schema 形式的 response_format，每次调用都会先返回 400
+    # 再降级到 JSON 模式，等于白跑一次请求、延迟翻倍。
+    # 换到支持该能力的模型时，把 _USE_STRUCTURED_OUTPUT 打开即可。
+    if _USE_STRUCTURED_OUTPUT:
+        try:
+            structured = model.with_structured_output(schema)
+            result = structured.invoke(
+                [("system", system_prompt), ("user", user_prompt)]
+            )
+            elapsed_ms = int((time.perf_counter() - start) * 1000)
+            logger.info(
+                "LLM 结构化输出成功 schema=%s elapsed_ms=%d",
+                schema.__name__,
+                elapsed_ms,
+            )
+            return result
+        except Exception as exc:  # noqa: BLE001  退化为 JSON 模式
+            logger.warning("结构化输出失败，退化为 JSON 模式：%s", exc)
 
     # ---- 路径二：JSON 模式 + 重试 1 次 ----
     json_user = (

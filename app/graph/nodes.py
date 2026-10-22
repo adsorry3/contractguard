@@ -26,6 +26,39 @@ _PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 _MAX_WORKERS = 3
 _MAX_COMBOS = 15
 
+# 「缺失型」风险：判断的是「全文有没有约定某项内容」，属于全文级判断。
+# 单条款精判看不到全文，实测评测集上这类风险 7/7 全部漏报，
+# 所以改由规则直接下结论（规则扫的就是全文，比单条注入 LLM 更可靠）。
+_RULE_ONLY_TYPES: set[str] = {"liability_cap_missing"}
+
+_RULE_ONLY_TEMPLATES: dict[str, dict[str, str]] = {
+    "liability_cap_missing": {
+        "risk_level": "high",
+        "reason": (
+            "全文未约定赔偿上限（未出现「赔偿上限」「责任限额」「最高赔偿」等表述），"
+            "一旦发生重大违约，索赔金额缺乏封顶依据，双方的风险敞口不可控。"
+        ),
+        "suggestion": (
+            "增加一条责任限额条款：任何一方因本合同承担的赔偿责任总额不超过合同总金额，"
+            "但因故意或重大过失造成的损失除外。"
+        ),
+    },
+}
+
+
+def _rule_only_risk(clause: dict, risk_type: str) -> dict:
+    """缺失型风险不走 LLM，直接用规则结论 + 模板化理由与建议。"""
+    template = _RULE_ONLY_TEMPLATES[risk_type]
+    return {
+        "clause_id": clause.get("clause_id"),
+        "risk_type": risk_type,
+        "risk_level": template["risk_level"],
+        "reason": template["reason"],
+        "suggestion": template["suggestion"],
+        "confidence": 0.95,
+    }
+
+
 
 @lru_cache(maxsize=None)
 def _load_prompt(name: str) -> str:
@@ -59,10 +92,23 @@ def detect_risks_node(state: State) -> dict:
     # 1. 规则粗筛，得到候选条款及其命中类型
     candidates = screen_candidates(clauses)
 
-    # 2. 展开成 (clause, risk_type) 组合，一条条款命中多类型就拆成多个组合
+    # 2. 拆成两路：缺失型风险由规则直判，其余交给 LLM 精判
+    rule_risks: list[dict] = []
+    llm_candidates: list[tuple[dict, list[str]]] = []
+    for clause, risk_types in candidates:
+        llm_types: list[str] = []
+        for risk_type in risk_types:
+            if risk_type in _RULE_ONLY_TYPES:
+                rule_risks.append(_rule_only_risk(clause, risk_type))
+            else:
+                llm_types.append(risk_type)
+        if llm_types:
+            llm_candidates.append((clause, llm_types))
+
+    # 3. 展开成 (clause, risk_type) 组合，一条条款命中多类型就拆成多个组合
     combos: list[tuple[dict, str]] = [
         (clause, risk_type)
-        for clause, risk_types in candidates
+        for clause, risk_types in llm_candidates
         for risk_type in risk_types
     ]
 
@@ -85,7 +131,7 @@ def detect_risks_node(state: State) -> dict:
         system_prompt = system_template.replace("__CANDIDATE_TYPES__", risk_type)
         return call_json(system_prompt, user_prompt, RiskJudgement)
 
-    risks: list[dict] = []
+    risks: list[dict] = list(rule_risks)
     with ThreadPoolExecutor(max_workers=_MAX_WORKERS) as pool:
         future_map = {pool.submit(_judge, combo): combo for combo in combos}
         for future in as_completed(future_map):

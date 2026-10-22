@@ -152,3 +152,20 @@ class EvalResult(Base):
     elapsed_ms: Mapped[int] = mapped_column(Integer, default=0)
     cost: Mapped[float] = mapped_column(Float, default=0.0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
+class ContractProfile(Base):
+    """合同字段抽取结果（fields）的 JSON 存储。
+
+    阶段 2 抽取的字段（甲方/乙方/金额/账期等）单独落这张表，
+    避免给 contract 表加列（create_all 不会给已有表加列）。
+    """
+
+    __tablename__ = "contract_profile"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    contract_id: Mapped[int] = mapped_column(
+        ForeignKey("contract.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    payload: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)

@@ -19,17 +19,19 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import get_db
 from app.graph.build import get_graph
-from app.models import Clause, Contract, ReviewTask, RiskItem
+from app.models import Clause, Contract, Feedback, ReviewTask, RiskItem
 from app.schemas import (
     AnalyzeResponse,
+    ChatIn,
     ClauseOut,
     ContractDetailOut,
     ContractOut,
+    FeedbackIn,
     PageOut,
     RiskItemOut,
     UploadResponse,
 )
-from app.services import redis_client, review_service
+from app.services import qa, retriever, redis_client, review_service
 from app.services.parser import SUPPORTED_EXTENSIONS, parse_document
 from app.services.splitter import split_clauses
 from app.services.task_runner import run_review
@@ -338,6 +340,95 @@ def get_report(contract_id: int, db: Session = Depends(get_db)) -> dict:
     return report
 
 
+@router.post("/{contract_id}/index", summary="为合同条款建立向量索引")
+def build_contract_index(contract_id: int, db: Session = Depends(get_db)) -> dict:
+    """把该合同所有 clause 批量向量化，写回 clause.embedding。"""
+    contract = db.get(Contract, contract_id)
+    if contract is None:
+        raise HTTPException(status_code=404, detail="合同不存在")
+
+    total = db.scalar(
+        select(func.count()).select_from(Clause).where(Clause.contract_id == contract_id)
+    ) or 0
+    if total == 0:
+        raise HTTPException(status_code=400, detail="该合同没有条款，无法建索引")
+
+    try:
+        indexed = retriever.build_index(db, contract_id)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return {"indexed": indexed, "skipped": total - indexed}
+
+
+@router.post("/{contract_id}/chat", summary="基于合同原文问答")
+def chat_with_contract(
+    contract_id: int,
+    payload: ChatIn,
+    db: Session = Depends(get_db),
+) -> dict:
+    """基于合同原文的 RAG 问答：检索 + 生成，返回答案与来源。"""
+    contract = db.get(Contract, contract_id)
+    if contract is None:
+        raise HTTPException(status_code=404, detail="合同不存在")
+
+    clause_count = db.scalar(
+        select(func.count()).select_from(Clause).where(Clause.contract_id == contract_id)
+    ) or 0
+    if clause_count == 0:
+        raise HTTPException(status_code=400, detail="该合同没有条款，无法问答")
+
+    # 若该合同没有任何 embedding，先自动建索引
+    has_embedding = db.scalar(
+        select(func.count())
+        .select_from(Clause)
+        .where(Clause.contract_id == contract_id, Clause.embedding.isnot(None))
+    ) or 0
+    if has_embedding == 0:
+        logger.info("合同 %s 无向量索引，自动建立", contract_id)
+        try:
+            retriever.build_index(db, contract_id)
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    try:
+        return qa.answer_question(db, contract_id, payload.question)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+risks_router = APIRouter(prefix="/api/risks", tags=["风险"])
+
+
+@risks_router.post("/{risk_id}/feedback", summary="提交风险反馈（采纳 / 驳回）")
+def submit_feedback(
+    risk_id: int,
+    payload: FeedbackIn,
+    db: Session = Depends(get_db),
+) -> dict:
+    """写 feedback 表、更新 risk_item 状态、失效报告缓存。"""
+    risk = db.get(RiskItem, risk_id)
+    if risk is None:
+        raise HTTPException(status_code=404, detail="风险项不存在")
+
+    new_status = "accepted" if payload.action == "accept" else "rejected"
+
+    db.add(
+        Feedback(
+            risk_item_id=risk_id,
+            action=payload.action,
+            comment=payload.comment or "",
+        )
+    )
+    risk.status = new_status
+    db.commit()
+
+    # 报告缓存里还存着旧状态，删掉让下次读取重新组装
+    _delete_report_cache(redis_client.key("report", risk.contract_id))
+
+    return {"risk_id": risk_id, "action": payload.action, "status": new_status}
+
+
 # ------------------------------------------------------------------ 内部辅助
 
 
@@ -392,3 +483,19 @@ def _set_report_cache(report_key: str, report: dict) -> None:
         )
     except Exception as exc:  # noqa: BLE001
         logger.warning("写报告缓存失败：%s", exc)
+
+
+def _delete_report_cache(report_key: str) -> None:
+    """删除报告缓存；Redis 挂了只 warning，不影响主流程。"""
+    try:
+        redis_client.get_redis().delete(report_key)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("删除报告缓存失败：%s", exc)
+
+
+# main.py 只 include 了 contracts.router，为避免改动 main.py，
+# 这里把合同路由和风险路由合并到同一个根 router 上统一注册。
+_merged_router = APIRouter()
+_merged_router.include_router(router)
+_merged_router.include_router(risks_router)
+router = _merged_router

@@ -1,9 +1,9 @@
 """接口的请求 / 响应模型。"""
 
 from datetime import datetime
-from typing import Generic, TypeVar
+from typing import Generic, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 T = TypeVar("T")
 
@@ -66,6 +66,29 @@ class RiskItemOut(BaseModel):
     reason: str
     suggestion: str
     confidence: float
+    # pending / accepted / rejected：前端用来显示「待处理 / 已采纳 / 已驳回」
+    status: str
+
+
+class FeedbackIn(BaseModel):
+    """风险采纳 / 驳回的请求体。"""
+
+    action: Literal["accept", "reject"]
+    comment: str = ""
+
+
+class ChatIn(BaseModel):
+    """合同问答请求。"""
+
+    question: str = Field(..., max_length=500)
+
+    @field_validator("question")
+    @classmethod
+    def _strip_question(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("问题不能为空")
+        return v
 
 
 class AnalyzeResponse(BaseModel):

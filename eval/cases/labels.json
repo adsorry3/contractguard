@@ -1,0 +1,386 @@
+{
+  "contract_01": [
+    {
+      "risk_type": "acceptance_vague",
+      "clause_no": "第三条"
+    },
+    {
+      "risk_type": "ip_ownership_unclear",
+      "clause_no": "第四条"
+    },
+    {
+      "risk_type": "payment_term_too_long",
+      "clause_no": "第一条"
+    }
+  ],
+  "contract_02": [
+    {
+      "risk_type": "auto_renewal",
+      "clause_no": "第八条"
+    },
+    {
+      "risk_type": "ip_ownership_unclear",
+      "clause_no": "第四条"
+    },
+    {
+      "risk_type": "liability_cap_missing",
+      "clause_no": "第二条"
+    },
+    {
+      "risk_type": "penalty_too_high",
+      "clause_no": "第二条"
+    }
+  ],
+  "contract_03": [
+    {
+      "risk_type": "confidentiality_vague",
+      "clause_no": "第七条"
+    },
+    {
+      "risk_type": "force_majeure_broad",
+      "clause_no": "第九条"
+    },
+    {
+      "risk_type": "ip_ownership_unclear",
+      "clause_no": "第四条"
+    },
+    {
+      "risk_type": "jurisdiction_unfair",
+      "clause_no": "第六条"
+    },
+    {
+      "risk_type": "payment_term_too_long",
+      "clause_no": "第一条"
+    },
+    {
+      "risk_type": "penalty_too_high",
+      "clause_no": "第二条"
+    }
+  ],
+  "contract_04": [
+    {
+      "risk_type": "acceptance_vague",
+      "clause_no": "第三条"
+    },
+    {
+      "risk_type": "auto_renewal",
+      "clause_no": "第八条"
+    },
+    {
+      "risk_type": "jurisdiction_unfair",
+      "clause_no": "第六条"
+    }
+  ],
+  "contract_05": [
+    {
+      "risk_type": "confidentiality_vague",
+      "clause_no": "第七条"
+    },
+    {
+      "risk_type": "ip_ownership_unclear",
+      "clause_no": "第四条"
+    },
+    {
+      "risk_type": "jurisdiction_unfair",
+      "clause_no": "第六条"
+    },
+    {
+      "risk_type": "payment_term_too_long",
+      "clause_no": "第一条"
+    }
+  ],
+  "contract_06": [
+    {
+      "risk_type": "ip_ownership_unclear",
+      "clause_no": "第四条"
+    },
+    {
+      "risk_type": "jurisdiction_unfair",
+      "clause_no": "第六条"
+    },
+    {
+      "risk_type": "penalty_too_high",
+      "clause_no": "第二条"
+    },
+    {
+      "risk_type": "unilateral_termination",
+      "clause_no": "第五条"
+    }
+  ],
+  "contract_07": [
+    {
+      "risk_type": "acceptance_vague",
+      "clause_no": "第三条"
+    },
+    {
+      "risk_type": "auto_renewal",
+      "clause_no": "第八条"
+    },
+    {
+      "risk_type": "penalty_too_high",
+      "clause_no": "第二条"
+    },
+    {
+      "risk_type": "unilateral_termination",
+      "clause_no": "第五条"
+    }
+  ],
+  "contract_08": [
+    {
+      "risk_type": "force_majeure_broad",
+      "clause_no": "第九条"
+    },
+    {
+      "risk_type": "ip_ownership_unclear",
+      "clause_no": "第四条"
+    },
+    {
+      "risk_type": "unilateral_termination",
+      "clause_no": "第五条"
+    }
+  ],
+  "contract_09": [
+    {
+      "risk_type": "auto_renewal",
+      "clause_no": "第八条"
+    },
+    {
+      "risk_type": "confidentiality_vague",
+      "clause_no": "第七条"
+    },
+    {
+      "risk_type": "penalty_too_high",
+      "clause_no": "第二条"
+    }
+  ],
+  "contract_10": [
+    {
+      "risk_type": "auto_renewal",
+      "clause_no": "第八条"
+    },
+    {
+      "risk_type": "confidentiality_vague",
+      "clause_no": "第七条"
+    },
+    {
+      "risk_type": "ip_ownership_unclear",
+      "clause_no": "第四条"
+    },
+    {
+      "risk_type": "jurisdiction_unfair",
+      "clause_no": "第六条"
+    },
+    {
+      "risk_type": "penalty_too_high",
+      "clause_no": "第二条"
+    },
+    {
+      "risk_type": "unilateral_termination",
+      "clause_no": "第五条"
+    }
+  ],
+  "contract_11": [
+    {
+      "risk_type": "acceptance_vague",
+      "clause_no": "第三条"
+    },
+    {
+      "risk_type": "force_majeure_broad",
+      "clause_no": "第九条"
+    },
+    {
+      "risk_type": "payment_term_too_long",
+      "clause_no": "第一条"
+    },
+    {
+      "risk_type": "penalty_too_high",
+      "clause_no": "第二条"
+    },
+    {
+      "risk_type": "unilateral_termination",
+      "clause_no": "第五条"
+    }
+  ],
+  "contract_12": [
+    {
+      "risk_type": "acceptance_vague",
+      "clause_no": "第三条"
+    },
+    {
+      "risk_type": "ip_ownership_unclear",
+      "clause_no": "第四条"
+    },
+    {
+      "risk_type": "jurisdiction_unfair",
+      "clause_no": "第六条"
+    },
+    {
+      "risk_type": "penalty_too_high",
+      "clause_no": "第二条"
+    }
+  ],
+  "contract_13": [
+    {
+      "risk_type": "confidentiality_vague",
+      "clause_no": "第七条"
+    },
+    {
+      "risk_type": "ip_ownership_unclear",
+      "clause_no": "第四条"
+    },
+    {
+      "risk_type": "jurisdiction_unfair",
+      "clause_no": "第六条"
+    }
+  ],
+  "contract_14": [
+    {
+      "risk_type": "auto_renewal",
+      "clause_no": "第八条"
+    },
+    {
+      "risk_type": "confidentiality_vague",
+      "clause_no": "第七条"
+    },
+    {
+      "risk_type": "liability_cap_missing",
+      "clause_no": "第二条"
+    },
+    {
+      "risk_type": "penalty_too_high",
+      "clause_no": "第二条"
+    },
+    {
+      "risk_type": "unilateral_termination",
+      "clause_no": "第五条"
+    }
+  ],
+  "contract_15": [
+    {
+      "risk_type": "acceptance_vague",
+      "clause_no": "第三条"
+    },
+    {
+      "risk_type": "confidentiality_vague",
+      "clause_no": "第七条"
+    },
+    {
+      "risk_type": "force_majeure_broad",
+      "clause_no": "第九条"
+    },
+    {
+      "risk_type": "liability_cap_missing",
+      "clause_no": "第二条"
+    },
+    {
+      "risk_type": "penalty_too_high",
+      "clause_no": "第二条"
+    }
+  ],
+  "contract_16": [
+    {
+      "risk_type": "acceptance_vague",
+      "clause_no": "第三条"
+    },
+    {
+      "risk_type": "auto_renewal",
+      "clause_no": "第八条"
+    },
+    {
+      "risk_type": "ip_ownership_unclear",
+      "clause_no": "第四条"
+    },
+    {
+      "risk_type": "liability_cap_missing",
+      "clause_no": "第二条"
+    },
+    {
+      "risk_type": "payment_term_too_long",
+      "clause_no": "第一条"
+    },
+    {
+      "risk_type": "unilateral_termination",
+      "clause_no": "第五条"
+    }
+  ],
+  "contract_17": [
+    {
+      "risk_type": "jurisdiction_unfair",
+      "clause_no": "第六条"
+    },
+    {
+      "risk_type": "liability_cap_missing",
+      "clause_no": "第二条"
+    },
+    {
+      "risk_type": "payment_term_too_long",
+      "clause_no": "第一条"
+    },
+    {
+      "risk_type": "unilateral_termination",
+      "clause_no": "第五条"
+    }
+  ],
+  "contract_18": [
+    {
+      "risk_type": "acceptance_vague",
+      "clause_no": "第三条"
+    },
+    {
+      "risk_type": "force_majeure_broad",
+      "clause_no": "第九条"
+    },
+    {
+      "risk_type": "unilateral_termination",
+      "clause_no": "第五条"
+    }
+  ],
+  "contract_19": [
+    {
+      "risk_type": "auto_renewal",
+      "clause_no": "第八条"
+    },
+    {
+      "risk_type": "confidentiality_vague",
+      "clause_no": "第七条"
+    },
+    {
+      "risk_type": "jurisdiction_unfair",
+      "clause_no": "第六条"
+    },
+    {
+      "risk_type": "liability_cap_missing",
+      "clause_no": "第二条"
+    },
+    {
+      "risk_type": "penalty_too_high",
+      "clause_no": "第二条"
+    },
+    {
+      "risk_type": "unilateral_termination",
+      "clause_no": "第五条"
+    }
+  ],
+  "contract_20": [
+    {
+      "risk_type": "auto_renewal",
+      "clause_no": "第八条"
+    },
+    {
+      "risk_type": "force_majeure_broad",
+      "clause_no": "第九条"
+    },
+    {
+      "risk_type": "jurisdiction_unfair",
+      "clause_no": "第六条"
+    },
+    {
+      "risk_type": "liability_cap_missing",
+      "clause_no": "第二条"
+    },
+    {
+      "risk_type": "penalty_too_high",
+      "clause_no": "第二条"
+    }
+  ]
+}

@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import logging
 
-from sqlalchemy import delete
+import json
+
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from app.models import Contract, RiskItem
+from app.models import Contract, ContractProfile, RiskItem
 from app.services import redis_client
 
 logger = logging.getLogger(__name__)
@@ -61,6 +63,9 @@ def persist_result(db: Session, contract_id: int, result: dict) -> int:
         contract.status = "analyzed"
     db.commit()
 
+    # 字段抽取结果单独落库（失败只 warning，不影响已写入的风险）
+    _persist_profile(db, contract_id, result.get("fields") or {})
+
     # 清报告缓存（Redis 挂了只 warning，不影响写库）
     _delete_report_cache(contract_id)
 
@@ -73,3 +78,22 @@ def _delete_report_cache(contract_id: int) -> None:
         redis_client.get_redis().delete(redis_client.key("report", contract_id))
     except Exception as exc:  # noqa: BLE001
         logger.warning("删除报告缓存失败：%s", exc)
+
+
+def _persist_profile(db: Session, contract_id: int, fields: dict) -> None:
+    """把字段抽取结果写入 contract_profile，已存在则更新 payload。
+
+    这一步失败不能影响 risk_item 的写入，所以整体 try/except 只 warning。
+    """
+    try:
+        payload = json.dumps(fields or {}, ensure_ascii=False)
+        profile = db.scalar(
+            select(ContractProfile).where(ContractProfile.contract_id == contract_id)
+        )
+        if profile is None:
+            db.add(ContractProfile(contract_id=contract_id, payload=payload))
+        else:
+            profile.payload = payload
+        db.commit()
+    except Exception as exc:  # noqa: BLE001  字段落库失败不影响主流程
+        logger.warning("字段抽取结果落库失败：%s", exc)

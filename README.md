@@ -40,16 +40,15 @@
 
 ```mermaid
 flowchart LR
-    UI[浏览器 Vue3] -->|上传 / 轮询 / 反馈| API[FastAPI]
-    API --> DB[(SQLite)]
-    API -.降级可选.-> RD[(Redis)]
-    API -->|BackgroundTasks| TASK[审查任务]
-    TASK --> G[LangGraph 状态机]
-    G --> RULE[规则粗筛]
-    G --> LLM[DeepSeek]
-    G --> EMB[bge-m3 向量]
-    MCP[MCP Server] --> DB
-    CD[Claude Desktop / 其他客户端] -->|MCP 协议| MCP
+    UI["浏览器 Vue3"] -->|"上传 / 轮询 / 反馈"| API["FastAPI"]
+    API --> DB["SQLite 7 张表"]
+    API -.->|"降级可选"| RD["Redis"]
+    API -->|"BackgroundTasks"| G["LangGraph"]
+    G --> RULE["规则粗筛"]
+    G --> LLM["DeepSeek 精判"]
+    G --> EMB["bge-m3 向量"]
+    MCP["MCP Server"] --> DB
+    CD["Claude Desktop"] -->|"MCP"| MCP
 ```
 
 **分层**：API 层只做 HTTP 与校验 → 服务层承载能力（解析 / 切分 / 检索 / LLM）→ 编排层用 LangGraph 串流程 → 数据层 7 张表。

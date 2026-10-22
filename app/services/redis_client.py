@@ -1,6 +1,11 @@
 """职责：Redis 连接管理 + key 前缀拼接。
 
 对外函数都要安全降级：Redis 挂了绝不能让接口 500。
+
+连接参数说明（redis-py 8.x）：
+socket_connect_timeout / socket_timeout / retry / health_check_interval 这些参数
+都通过 ConnectionPool 的 **connection_kwargs 落到 Connection 层生效，
+因此统一在 ConnectionPool.from_url 里设置。
 """
 
 from __future__ import annotations
@@ -8,6 +13,8 @@ from __future__ import annotations
 import logging
 
 from redis import ConnectionPool, Redis
+from redis.backoff import NoBackoff
+from redis.retry import Retry
 
 from app.config import settings
 
@@ -24,6 +31,11 @@ def _get_pool() -> ConnectionPool:
         _pool = ConnectionPool.from_url(
             settings.redis_url,
             decode_responses=True,
+            socket_connect_timeout=0.3,   # 连接超时：Redis 挂掉时快速失败
+            socket_timeout=0.3,           # 读写超时
+            max_connections=20,           # 最大连接数
+            health_check_interval=30,     # 每 30 秒健康检查
+            retry=Retry(NoBackoff(), 0),  # 显式关闭重试，连接错误不重试
         )
     return _pool
 

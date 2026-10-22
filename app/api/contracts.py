@@ -252,8 +252,10 @@ def submit_review(
 ) -> dict:
     """提交审查任务，立即返回 task_id，后台执行。
 
-    - Redis 分布式锁防重复提交（TTL 300 秒）；
-    - 抢不到锁：有 pending/running 任务就返回它，否则 409，绝不新建。
+    防重复原则：数据库是唯一事实来源，Redis 锁只是防并发的加速手段。
+    - 先查 DB 有无 pending/running 任务，有则直接返回它；
+    - 再抢锁（Redis 正常时防并发竞态）；
+    - Redis 不可用时降级为无锁，但只在 DB 确认无活跃任务后才新建。
     """
     contract = db.get(Contract, contract_id)
     if contract is None:
@@ -271,14 +273,23 @@ def submit_review(
             detail="LLM 服务未配置：请在项目根目录的 .env 文件里填写 DEEPSEEK_API_KEY 后重启服务",
         )
 
+    # 1. DB 优先：先查有没有正在跑的任务
+    existing = _find_active_task(db, contract_id)
+    if existing is not None:
+        return {"task_id": existing.id, "status": existing.status}
+
+    # 2. 没有活跃任务，尝试抢锁
     lock_key = redis_client.key("lock", "contract", contract_id)
-    acquired = _acquire_lock(lock_key, _REVIEW_LOCK_TTL)
-    if not acquired:
+    lock_result = _acquire_lock(lock_key, _REVIEW_LOCK_TTL)
+
+    if lock_result is False:
+        # 锁被占用：别的请求可能刚建好任务，再查一次 DB
         existing = _find_active_task(db, contract_id)
         if existing is not None:
             return {"task_id": existing.id, "status": existing.status}
         raise HTTPException(status_code=409, detail="该合同正在审查中，请稍后查看")
 
+    # True（抢到锁）或 None（Redis 不可用，DB 已确认无活跃任务）→ 新建
     task = ReviewTask(
         contract_id=contract_id, status="pending", progress=0, stage="排队中"
     )
@@ -300,7 +311,7 @@ def get_report(contract_id: int, db: Session = Depends(get_db)) -> dict:
 
     report_key = redis_client.key("report", contract_id)
 
-    cached = _get_report_cache(report_key)
+    cached, redis_ok = _get_report_cache(report_key)
     if cached is not None:
         return cached
 
@@ -320,7 +331,9 @@ def get_report(contract_id: int, db: Session = Depends(get_db)) -> dict:
         "risks": [RiskItemOut.model_validate(r).model_dump() for r in risks],
     }
 
-    _set_report_cache(report_key, report)
+    # 读缓存时 Redis 已失败，就跳过写缓存，避免同一次请求白等第二次超时
+    if redis_ok:
+        _set_report_cache(report_key, report)
 
     return report
 
@@ -328,14 +341,17 @@ def get_report(contract_id: int, db: Session = Depends(get_db)) -> dict:
 # ------------------------------------------------------------------ 内部辅助
 
 
-def _acquire_lock(lock_key: str, ttl: int) -> bool:
-    """抢分布式锁。返回 True 表示可继续（抢到锁，或 Redis 挂了降级为无锁）；
-    返回 False 表示锁被别的任务持有。"""
+def _acquire_lock(lock_key: str, ttl: int) -> bool | None:
+    """抢分布式锁，三态返回：
+    - True  = 抢到锁
+    - False = 锁被别的请求持有
+    - None  = Redis 不可用（降级）
+    """
     try:
         return bool(redis_client.get_redis().set(lock_key, "1", nx=True, ex=ttl))
-    except Exception as exc:  # noqa: BLE001  Redis 挂了降级为无锁，允许继续
-        logger.warning("Redis 不可用，降级为无锁模式：%s", exc)
-        return True
+    except Exception as exc:  # noqa: BLE001  Redis 不可用
+        logger.warning("Redis 不可用，锁降级为无锁模式：%s", exc)
+        return None
 
 
 def _find_active_task(db: Session, contract_id: int):
@@ -350,15 +366,20 @@ def _find_active_task(db: Session, contract_id: int):
     ).first()
 
 
-def _get_report_cache(report_key: str):
-    """读报告缓存，Redis 挂了或未命中返回 None。"""
+def _get_report_cache(report_key: str) -> tuple[dict | None, bool]:
+    """读报告缓存，返回 (缓存值或 None, Redis 是否可用)。
+
+    Redis 挂了或未命中时缓存值为 None；第二个值标记 Redis 是否可用，
+    供 get_report 判断是否还要写缓存，避免同一次请求白等第二次超时。
+    """
     try:
         raw = redis_client.get_redis().get(report_key)
         if raw:
-            return json.loads(raw)
+            return json.loads(raw), True
+        return None, True
     except Exception as exc:  # noqa: BLE001
         logger.warning("读报告缓存失败：%s", exc)
-    return None
+        return None, False
 
 
 def _set_report_cache(report_key: str, report: dict) -> None:

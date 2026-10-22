@@ -1,0 +1,79 @@
+"""接口的请求 / 响应模型。"""
+
+from datetime import datetime
+from typing import Generic, TypeVar
+
+from pydantic import BaseModel, ConfigDict, Field
+
+T = TypeVar("T")
+
+
+class ClauseOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    clause_no: str
+    title: str
+    content: str
+    level: int
+    parent_no: str
+    page_no: int
+    char_start: int
+    char_end: int
+
+
+class ContractOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    filename: str
+    file_type: str
+    page_count: int
+    char_count: int
+    status: str
+    created_at: datetime
+
+
+class ContractDetailOut(ContractOut):
+    clause_count: int = 0
+    clauses: list[ClauseOut] = Field(default_factory=list)
+
+
+class UploadResponse(BaseModel):
+    contract_id: int
+    filename: str
+    clause_count: int
+    page_count: int
+    char_count: int
+
+
+class PageOut(BaseModel, Generic[T]):
+    total: int
+    page: int = 1
+    size: int = 10
+    items: list[T]
+
+
+class RiskItemOut(BaseModel):
+    """风险项响应模型。"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    clause_id: int | None
+    risk_type: str
+    risk_level: str
+    reason: str
+    suggestion: str
+    confidence: float
+
+
+class AnalyzeResponse(BaseModel):
+    """审查结果响应模型。"""
+
+    contract_id: int
+    risk_count: int
+    fields: dict
+    risks: list[RiskItemOut]
+    errors: list[str] = []
+    elapsed_ms: int

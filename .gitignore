@@ -1,0 +1,26 @@
+# 虚拟环境
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# 环境变量（绝对不要提交）
+.env
+
+# 本地数据
+*.db
+*.sqlite3
+uploads/
+eval/cases/*.pdf
+
+# IDE
+.idea/
+.vscode/
+
+# 系统
+Thumbs.db
+.DS_Store

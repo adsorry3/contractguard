@@ -1,0 +1,28 @@
+# ===== Web 框架 =====
+fastapi
+uvicorn[standard]
+python-multipart
+sse-starlette
+pydantic
+pydantic-settings
+
+# ===== 数据库（阶段 0 用 SQLite，无需安装任何服务）=====
+SQLAlchemy>=2.0
+
+# ===== LLM 与编排（阶段 2 开始使用）=====
+langchain
+langchain-openai
+langgraph
+tiktoken
+
+# ===== 检索（阶段 5 使用）=====
+rank-bm25
+numpy
+
+# ===== 文档解析（阶段 1 使用）=====
+pypdf
+python-docx
+
+# ===== 工具 =====
+httpx
+tenacity

@@ -38,17 +38,20 @@
 
 ## 架构
 
-```mermaid
-flowchart LR
-    UI["浏览器 Vue3"] -->|"上传 / 轮询 / 反馈"| API["FastAPI"]
-    API --> DB["SQLite 7 张表"]
-    API -.->|"降级可选"| RD["Redis"]
-    API -->|"BackgroundTasks"| G["LangGraph"]
-    G --> RULE["规则粗筛"]
-    G --> LLM["DeepSeek 精判"]
-    G --> EMB["bge-m3 向量"]
-    MCP["MCP Server"] --> DB
-    CD["Claude Desktop"] -->|"MCP"| MCP
+```text
+浏览器（Vue3 单页，CDN，无构建）
+   │  HTTP / SSE
+   ▼
+FastAPI ──────────────► SQLite（7 张表）
+   │
+   ├─ BackgroundTasks ─► LangGraph 状态机
+   │                       ├─ extract_fields：LLM 抽 9 个关键字段
+   │                       └─ detect_risks：规则粗筛 → LLM 并发精判
+   │                                         └─ 缺失型风险：规则直判
+   │
+   ├─ 问答：bge-m3 向量 + BM25 → RRF 融合 → DeepSeek 生成（答案带引用）
+   ├─ Redis：任务进度 / 分布式锁 / 报告缓存（不可用时自动降级）
+   └─ MCP Server（stdio）◄── Claude Desktop 等外部客户端
 ```
 
 **分层**：API 层只做 HTTP 与校验 → 服务层承载能力（解析 / 切分 / 检索 / LLM）→ 编排层用 LangGraph 串流程 → 数据层 7 张表。

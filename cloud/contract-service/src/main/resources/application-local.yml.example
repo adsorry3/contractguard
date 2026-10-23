@@ -1,0 +1,29 @@
+# ============================================================================
+# 本地环境配置模板（application-local.yml.example）
+#
+# 用法：
+#   1. 复制本文件为 application-local.yml（去掉 .example 后缀）
+#   2. 填入你本地的 MySQL 账号密码
+#   3. application-local.yml 已被 .gitignore 忽略，不会提交到仓库
+#
+# 说明：
+#   application.yml 中已配置 spring.profiles.active: local，
+#   启动时会自动加载 application-local.yml，用于覆盖/补充通用配置。
+# ============================================================================
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 必带参数说明：
+    #   useUnicode=true & characterEncoding=utf8 —— 防中文乱码
+    #   serverTimezone=Asia/Shanghai          —— 指定时区，避免时间差 8 小时
+    #   useSSL=false & allowPublicKeyRetrieval=true —— 兼容 MySQL 8 默认认证方式
+    url: jdbc:mysql://localhost:3306/contractguard?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: YOUR_PASSWORD_HERE
+    # HikariCP 连接池（Spring Boot 默认自带，无需额外依赖）
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000

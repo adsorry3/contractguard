@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.contractguard.service.mapper.RiskItemMapper">
+
+    <!--
+        风险汇总统计：
+        按 contract_id + risk_level 分组统计风险数量，
+        联表 contract 带出文件名，相关子查询算出每个合同的总风险数，按数量倒序。
+    -->
+    <select id="selectRiskSummary" resultType="com.contractguard.service.vo.RiskSummaryVO">
+        SELECT
+            r.contract_id  AS contractId,
+            c.filename     AS filename,
+            r.risk_level   AS riskLevel,
+            COUNT(*)       AS riskCount,
+            (
+                SELECT COUNT(*)
+                FROM risk_item ri
+                WHERE ri.contract_id = r.contract_id
+            )              AS totalCount
+        FROM risk_item r
+        LEFT JOIN contract c ON c.id = r.contract_id
+        GROUP BY r.contract_id, r.risk_level, c.filename
+        ORDER BY riskCount DESC, r.contract_id ASC
+    </select>
+
+</mapper>

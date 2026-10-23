@@ -1,0 +1,11 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+*.iml
+.idea/
+.vscode/
+
+*.log
+
+# 本地数据库配置（含密码，不要提交）
+**/application-local.yml

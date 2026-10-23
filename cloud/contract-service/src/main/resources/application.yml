@@ -7,6 +7,11 @@ spring:
   # 激活本地环境：数据源账号密码等敏感信息在 application-local.yml（已被 .gitignore 忽略）
   profiles:
     active: local
+  cloud:
+    loadbalancer:
+      retry:
+        # 关闭 Feign 重试：review 有副作用（调 LLM、写库），超时自动重调会重复烧 token
+        enabled: false
 
 eureka:
   client:
@@ -24,6 +29,11 @@ management:
     web:
       exposure:
         include: health,info
+
+# AI 服务（Python 侧）Feign 配置
+ai:
+  service:
+    url: ""          # 留空走注册中心；填 http://localhost:8000 则直连
 
 # MyBatis-Plus 配置
 mybatis-plus:

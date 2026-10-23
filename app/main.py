@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect, text
 
-from app.api import contracts, tasks
+from app.api import ai, contracts, tasks
 from app.config import settings
 from app.db import Base, SessionLocal, engine
 from app.services.eureka_client import eureka_client
@@ -87,6 +87,7 @@ if Path("static").exists():
 
 app.include_router(contracts.router)
 app.include_router(tasks.router)
+app.include_router(ai.router)
 
 
 @app.get("/health", tags=["系统"])

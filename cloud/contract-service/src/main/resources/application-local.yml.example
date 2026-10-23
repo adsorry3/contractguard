@@ -27,3 +27,16 @@ spring:
       minimum-idle: 2
       connection-timeout: 30000
       idle-timeout: 600000
+  # Redis 缓存（合同详情缓存，读多写少）
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 2000ms
+
+# ===== AI 服务（Python 侧）Feign 配置（可选覆盖）=====
+# 默认留空走注册中心发现；本地联调想直连 Python 时，取消下面注释并填地址
+# ai:
+#   service:
+#     url: http://localhost:8000

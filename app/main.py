@@ -1,5 +1,6 @@
 """FastAPI 入口：初始化数据库、注册路由、挂载静态目录。"""
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -12,6 +13,7 @@ from sqlalchemy import inspect, text
 from app.api import contracts, tasks
 from app.config import settings
 from app.db import Base, SessionLocal, engine
+from app.services.eureka_client import eureka_client
 from app.services.redis_client import ping_redis
 
 logging.basicConfig(
@@ -54,9 +56,21 @@ async def lifespan(app: FastAPI):
     if not ping_redis():
         logger.warning("Redis 不可用，任务进度与报告缓存将降级为数据库兜底")
 
+    # 注册到 Eureka：放到独立线程跑，避免同步 HTTP 阻塞事件循环；失败不影响启动
+    try:
+        await asyncio.to_thread(eureka_client.start)
+    except Exception:  # noqa: BLE001  内部已捕获，这里兜底
+        logger.warning("Eureka 注册启动异常，服务仍可正常使用", exc_info=True)
+
     logger.info("服务启动完成，访问 http://127.0.0.1:8000/docs")
 
     yield
+
+    # 优雅注销：主动 DELETE，让 Eureka 面板上立刻消失，不等租约过期
+    try:
+        await asyncio.to_thread(eureka_client.stop)
+    except Exception:  # noqa: BLE001  内部已捕获，这里兜底
+        logger.warning("Eureka 注销异常", exc_info=True)
 
     logger.info("服务已关闭")
 

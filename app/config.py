@@ -40,5 +40,10 @@ class Settings(BaseSettings):
     task_ttl_seconds: int = 3600
     cache_ttl_seconds: int = 300
 
+    # ===== Eureka 注册中心（服务发现，Java 侧靠它发现 AI-SERVICE）=====
+    eureka_enabled: bool = True
+    eureka_url: str = "http://localhost:8761"
+    ai_service_port: int = 8000
+
 
 settings = Settings()
